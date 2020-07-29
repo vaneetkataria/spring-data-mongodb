@@ -10,6 +10,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 import com.katariasoft.technologies.springdatamongo.entity.Rating;
 import com.katariasoft.technologies.springdatamongo.repository.RatingsRepository;
@@ -29,13 +32,17 @@ public class SpringDataMongoApplication implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
-		createFindThenSaveTest();
-		// createFindThenSaveTest_mongoTemplate();
+		// createFindThenSaveTest();
+		createFindThenSaveTest_mongoTemplate();
 		// createFindThenSaveTest_All();
 		// createFindThenSaveTest_All_mongoTemplate();
 
 	}
 
+	/*
+	 * Replaces document hence all unsaved fields are present in oplog data .
+	 * 
+	 */
 	private void createFindThenSaveTest() {
 		// Simple Insert
 		Rating rating = new Rating("0", "New:0.0", true, 0.0);
@@ -52,6 +59,10 @@ public class SpringDataMongoApplication implements ApplicationRunner {
 		});
 	}
 
+	/*
+	 * Replaces document hence all unsaved fields are present in oplog data .
+	 * 
+	 */
 	private void createFindThenSaveTest_mongoTemplate() {
 		// Simple Insert
 		Rating rating = new Rating("0", "New:0.0", true, 0.0);
@@ -68,6 +79,10 @@ public class SpringDataMongoApplication implements ApplicationRunner {
 		});
 	}
 
+	/*
+	 * Replaces document hence all unsaved fields are present in oplog data .
+	 * 
+	 */
 	private void createFindThenSaveTest_All() {
 		ratingsRepository.saveAll(IntStream.range(1, 11).mapToObj(i -> new Rating(i + "", i + "", true, 1.0))
 				.collect(Collectors.toList()));
@@ -79,14 +94,17 @@ public class SpringDataMongoApplication implements ApplicationRunner {
 
 	}
 
+	/*
+	 * Updates and generates only changed fields .
+	 */
 	private void createFindThenSaveTest_All_mongoTemplate() {
 		ratingsRepository.saveAll(IntStream.range(1, 11).mapToObj(i -> new Rating(i + "", i + "", true, 1.0))
 				.collect(Collectors.toList()));
-
-		mongoTemplate.findAll(Rating.class).stream().map(dbRating -> {
-			dbRating.setAggregatedRating(dbRating.getAggregatedRating() + 1);
-			return dbRating;
-		}).forEach(mongoTemplate::save);
+		Query query = new Query();
+		query.addCriteria(Criteria.where("merchantId").is("1"));
+		Update update = new Update();
+		update.set("aggregatedRating", 100.0);
+		mongoTemplate.updateMulti(query, update, Rating.class);
 
 	}
 }
